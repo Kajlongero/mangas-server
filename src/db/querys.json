@@ -1,0 +1,56 @@
+{
+  "postgres": {
+    "auth": {
+      "roles": {},
+      "sessions": {},
+      "recovery": {},
+      "permissions": {},
+      "confirmation": {}
+    },
+    "admin": {
+      "logs": {},
+      "roles": {},
+      "actions": {}
+    },
+    "user": {},
+    "comics": {},
+    "translationGroups": {},
+    "logs": {}
+  },
+  "mariadb": {
+    "auth": {
+      "roles": {},
+      "sessions": {},
+      "recovery": {},
+      "permissions": {},
+      "confirmation": {}
+    },
+    "admin": {
+      "logs": {},
+      "roles": {},
+      "actions": {}
+    },
+    "user": {},
+    "comics": {},
+    "translationGroups": {},
+    "logs": {}
+  },
+  "mysql": {
+    "auth": {
+      "roles": {},
+      "sessions": {},
+      "recovery": {},
+      "permissions": {},
+      "confirmation": {}
+    },
+    "admin": {
+      "logs": {},
+      "roles": {},
+      "actions": {}
+    },
+    "user": {},
+    "comics": {},
+    "translationGroups": {},
+    "logs": {}
+  }
+}
