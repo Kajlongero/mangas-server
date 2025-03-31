@@ -1,8 +1,20 @@
 {
   "postgres": {
     "auth": {
+      "info": {
+        "getInfoByEmail": "SELECT * FROM security.auth_info WHERE email = $1",
+        "getInfoByAuthId": "SELECT * FROM security.auth_info WHERE auth_id = $1"
+      },
       "roles": {},
-      "sessions": {},
+      "sessions": {
+        "getSessionById": "SELECT * FROM security.active_sessions WHERE id = $1",
+        "getSessionByAtJti": "SELECT * FROM security.active_sessions WHERE at_jti = $1",
+        "getSessionByRtJti": "SELECT * FROM security.active_sessions WHERE rt_jti = $1",
+        "getSessionsByAuthId": "SELECT * FROM security.active_sessions WHERE auth_id = $1",
+        "createSession": "SELECT * FROM security.create_session($1, $2)",
+        "refreshSession": "SELECT * FROM security.refresh_session($1, $2, $3)",
+        "deleteSession": "DELETE FROM security.active_sessions WHERE id = $1"
+      },
       "recovery": {},
       "permissions": {},
       "confirmation": {}
@@ -12,7 +24,19 @@
       "roles": {},
       "actions": {}
     },
-    "user": {},
+    "user": {
+      "getUserById": "SELECT * FROM security.users WHERE id = $1",
+      "getUserByUsername": "SELECT * FROM security.users WHERE username = $1",
+      "createUser": "SELECT * FROM security.register_user($1, $2, $3)",
+      "updateUsername": "UPDATE security.users SET username = $2 WHERE id = $1",
+      "deleteUser": "UPDATE security.users SET deleted_at = NOW() WHERE id = $1",
+      "profile": {
+        "getProfileById": "SELECT * FROM security.profile WHERE id = $1",
+        "getProfileByUserId": "SELECT * FROM security.profile WHERE user_id = $1",
+        "updateDescription": "UPDATE security.profile SET description = $1 WHERE id = $2",
+        "updateBirthDate": "UPDATE security.profile SET birth_date = $1 WHERE id = $2"
+      }
+    },
     "comics": {},
     "translationGroups": {},
     "logs": {}
