@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION security.register_user (
-  username VARCHAR,
-  email VARCHAR,
-  password VARCHAR 
+  p_username VARCHAR,
+  p_email VARCHAR,
+  p_password VARCHAR,
+  p_role_name VARCHAR
 ) RETURNS TABLE (
   user_id UUID,
   auth_id INTEGER,
@@ -19,7 +20,7 @@ DECLARE
   t_role_name VARCHAR;
 BEGIN    
   INSERT INTO security.users (username)
-  VALUES (username)
+  VALUES (p_username)
   RETURNING id INTO t_user_id;
 
   INSERT INTO security.auth (user_id)
@@ -31,12 +32,12 @@ BEGIN
   RETURNING id INTO t_profile_id;
 
   INSERT INTO security.auth_info (auth_id, email, password) 
-  VALUES (t_auth_id, email, password)
-  RETURNING id INTO auth_info_id;
+  VALUES (t_auth_id, p_email, p_password)
+  RETURNING id INTO t_auth_info_id;
 
   SELECT rdv.role_id as role_id, rdv.role_name INTO t_role_id, t_role_name
   FROM security.roles_dedicated_view AS rdv
-  WHERE rdv.role_name = 'REGULAR_USER';
+  WHERE rdv.role_name = p_role_name;
 
   INSERT INTO security.auth_roles (role_id, auth_id) VALUES
   (t_role_id, t_auth_id);

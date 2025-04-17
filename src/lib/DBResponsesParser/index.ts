@@ -24,9 +24,13 @@ export class DBResponsesParser {
 
       const parsed = this.transform(word);
 
+      if (typeof Date.parse(val as unknown as string) === "number") {
+        newObj[parsed] = val;
+        continue;
+      }
+
       if (!Array.isArray(val) && val !== null && typeof val === "object") {
         newObj[parsed] = this.parse(val as Record<string, unknown>);
-
         continue;
       }
 

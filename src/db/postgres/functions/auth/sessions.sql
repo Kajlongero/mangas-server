@@ -1,16 +1,14 @@
 CREATE OR REPLACE FUNCTION security.create_session (
-  auth_id INTEGER,
-  key TEXT
+  p_auth_id INTEGER,
+  p_key TEXT,
+  p_interval TIMESTAMPTZ
 ) RETURNS TABLE (LIKE security.active_sessions)
 AS $$ 
 DECLARE
   t_sid BIGINT;
-  t_interval TIMESTAMPTZ;
 BEGIN
-  t_interval := NOW() + '6 mon';
-
   INSERT INTO security.active_sessions (auth_id, public_key, expires_at)
-  VALUES (auth_id, key, t_interval)
+  VALUES (p_auth_id, p_key, p_interval)
   RETURNING id INTO t_sid;
 
   RETURN QUERY SELECT * FROM security.active_sessions WHERE id = t_sid;
@@ -22,20 +20,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION security.refresh_session(
-  session_id BIGINT,
-  at_jti VARCHAR,
-  rt_jti VARCHAR
+  p_session_id BIGINT,
+  p_time TIMESTAMPTZ
 ) RETURNS TABLE (LIKE security.active_sessions)
 AS $$
 DECLARE
   t_interval TIMESTAMPTZ;
 BEGIN
-  t_interval := NOW() + '6 mon';
+  UPDATE security.active_sessions SET at_jti = (SELECT uuid_generate_v4()), rt_jti = (SELECT uuid_generate_v4()), expires_at = p_time, updated_at = (SELECT NOW())
+  WHERE id = p_session_id;
 
-  UPDATE security.active_sessions SET at_jti = at_jti, rt_jti = rt_jti, expires_at = t_interval, updated_at = (SELECT NOW())
-  WHERE id = session_id;
-
-  RETURN QUERY SELECT * FROM security.active_sessions WHERE id = session_id;
+  RETURN QUERY SELECT * FROM security.active_sessions WHERE id = p_session_id;
 EXCEPTION
   WHEN OTHERS THEN
     RAISE NOTICE 'Failed to refresh session due to an error: %', SQLERRM;

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS security.roles (
   id SERIAL NOT NULL PRIMARY KEY,
   name VARCHAR(64) UNIQUE NOT NULL,
   description TEXT,
+  is_special BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
   deleted_at TIMESTAMPTZ
@@ -69,7 +70,6 @@ CREATE INDEX idx_roles_categories_roles_categories_id ON security.roles_categori
 
 CREATE TABLE IF NOT EXISTS security.auth (
   id SERIAL NOT NULL PRIMARY KEY,
-  password_recovery_until TIMESTAMPTZ,
   user_id UUID NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
@@ -149,6 +149,10 @@ CREATE TABLE IF NOT EXISTS security.auth_info (
   email VARCHAR(120) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   auth_id INTEGER NOT NULL,
+  login_until TIMESTAMPTZ,
+  login_attempts INTEGER NOT NULL DEFAULT 0,
+  password_recovery_until TIMESTAMPTZ,
+  password_recovery_attempts INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
   deleted_at TIMESTAMPTZ,

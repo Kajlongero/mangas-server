@@ -1,18 +1,27 @@
 {
   "postgres": {
     "auth": {
+      "getById": "SELECT * FROM security.auth WHERE id = $1",
+      "getByUserId": "SELECT * FROM security.auth WHERE user_id = $1",
+      "updateAttempts": "UPDATE security.auth SET login_attempts = $2, login_until = $3 WHERE id = $1",
       "info": {
         "getInfoByEmail": "SELECT * FROM security.auth_info WHERE email = $1",
-        "getInfoByAuthId": "SELECT * FROM security.auth_info WHERE auth_id = $1"
+        "getInfoByAuthId": "SELECT * FROM security.auth_info WHERE auth_id = $1",
+        "getInfoByUsername": "SELECT ai.* FROM security.auth_info AS ai INNER JOIN security.auth AS a ON ai.auth_id = a.id INNER JOIN security.users AS u ON u.id = a.user_id WHERE u.username = $1"
       },
-      "roles": {},
+      "roles": {
+        "getRoles": "SELECT * FROM security.roles",
+        "getRolesCategories": "SELECT * FROM security.roles_categories",
+        "getRolesWithCategories": "SELECT r.id as role_id, r.name as role_name, rc.id as roles_categories_id, rc.name as roles_categories_name, r.description as role_description, r.is_special as role_is_special, r.created_at as role_created_at, r.updated_at as role_updated_at, r.deleted_at as role_deleted_at FROM security.roles AS r INNER JOIN security.roles_categories_roles AS rcr ON rcr.role_id = r.id INNER JOIN security.roles_categories AS rc ON rc.id = rcr.roles_categories_id",
+        "getRolesByAuthId": "SELECT r.name FROM security.roles AS r INNER JOIN security.auth_roles as ar ON ar.role_id = r.id INNER JOIN security.auth AS a ON a.id = ar.auth_id WHERE a.id = $1"
+      },
       "sessions": {
         "getSessionById": "SELECT * FROM security.active_sessions WHERE id = $1",
         "getSessionByAtJti": "SELECT * FROM security.active_sessions WHERE at_jti = $1",
         "getSessionByRtJti": "SELECT * FROM security.active_sessions WHERE rt_jti = $1",
         "getSessionsByAuthId": "SELECT * FROM security.active_sessions WHERE auth_id = $1",
-        "createSession": "SELECT * FROM security.create_session($1, $2)",
-        "refreshSession": "SELECT * FROM security.refresh_session($1, $2, $3)",
+        "createSession": "SELECT * FROM security.create_session($1, $2, $3)",
+        "refreshSession": "SELECT * FROM security.refresh_session($1, $2)",
         "deleteSession": "DELETE FROM security.active_sessions WHERE id = $1"
       },
       "recovery": {},
@@ -21,13 +30,16 @@
     },
     "admin": {
       "logs": {},
-      "roles": {},
+      "roles": {
+        "getRolesByAuthId": ""
+      },
       "actions": {}
     },
     "user": {
       "getUserById": "SELECT * FROM security.users WHERE id = $1",
       "getUserByUsername": "SELECT * FROM security.users WHERE username = $1",
-      "createUser": "SELECT * FROM security.register_user($1, $2, $3)",
+      "getUserByAuthId": "SELECT * FROM security.users WHERE id = (SELECT user_id FROM security.auth WHERE id = $1)",
+      "createUser": "SELECT * FROM security.register_user($1, $2, $3, $4)",
       "updateUsername": "UPDATE security.users SET username = $2 WHERE id = $1",
       "deleteUser": "UPDATE security.users SET deleted_at = NOW() WHERE id = $1",
       "profile": {
@@ -43,36 +55,108 @@
   },
   "mariadb": {
     "auth": {
-      "roles": {},
-      "sessions": {},
+      "getById": "",
+      "getByUserId": "",
+      "updateAttempts": "",
+      "info": {
+        "getInfoByEmail": "",
+        "getInfoByAuthId": "",
+        "getInfoByUsername": ""
+      },
+      "roles": {
+        "getRoles": "",
+        "getRolesByAuthId": "",
+        "getRolesWithCategories": "",
+        "getRolesCategories": ""
+      },
+      "sessions": {
+        "getSessionById": "",
+        "getSessionByAtJti": "",
+        "getSessionByRtJti": "",
+        "getSessionsByAuthId": "",
+        "createSession": "",
+        "refreshSession": "",
+        "deleteSession": ""
+      },
       "recovery": {},
       "permissions": {},
       "confirmation": {}
     },
     "admin": {
       "logs": {},
-      "roles": {},
+      "roles": {
+        "getRolesByAuthId": ""
+      },
       "actions": {}
     },
-    "user": {},
+    "user": {
+      "getUserById": "",
+      "getUserByUsername": "",
+      "getUserByAuthId": "",
+      "createUser": "",
+      "updateUsername": "",
+      "deleteUser": "",
+      "profile": {
+        "getProfileById": "",
+        "getProfileByUserId": "",
+        "updateDescription": "",
+        "updateBirthDate": ""
+      }
+    },
     "comics": {},
     "translationGroups": {},
     "logs": {}
   },
   "mysql": {
     "auth": {
-      "roles": {},
-      "sessions": {},
+      "getById": "",
+      "getByUserId": "",
+      "updateAttempts": "",
+      "info": {
+        "getInfoByEmail": "",
+        "getInfoByAuthId": "",
+        "getInfoByUsername": ""
+      },
+      "roles": {
+        "getRolesByAuthId": "",
+        "getRoles": "",
+        "getRolesWithCategories": "",
+        "getRolesCategories": ""
+      },
+      "sessions": {
+        "getSessionById": "",
+        "getSessionByAtJti": "",
+        "getSessionByRtJti": "",
+        "getSessionsByAuthId": "",
+        "createSession": "",
+        "refreshSession": "",
+        "deleteSession": ""
+      },
       "recovery": {},
       "permissions": {},
       "confirmation": {}
     },
     "admin": {
       "logs": {},
-      "roles": {},
+      "roles": {
+        "getRolesByAuthId": ""
+      },
       "actions": {}
     },
-    "user": {},
+    "user": {
+      "getUserById": "",
+      "getUserByUsername": "",
+      "getUserByAuthId": "",
+      "createUser": "",
+      "updateUsername": "",
+      "deleteUser": "",
+      "profile": {
+        "getProfileById": "",
+        "getProfileByUserId": "",
+        "updateDescription": "",
+        "updateBirthDate": ""
+      }
+    },
     "comics": {},
     "translationGroups": {},
     "logs": {}
