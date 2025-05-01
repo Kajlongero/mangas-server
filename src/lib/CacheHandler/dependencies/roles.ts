@@ -33,5 +33,6 @@ export async function rolesWithCategoriesLoader(): Promise<
     []
   );
   const rolesWCategories = data as RolesWithCategories[];
+
   return rolesWCategories;
 }

@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS security.profile (
   birth_date DATE,
   description VARCHAR(192),
   user_id UUID NOT NULL,
+  profile_image_id INTEGER,
+  background_image_id INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
   deleted_at TIMESTAMPTZ,
@@ -20,7 +22,17 @@ CREATE TABLE IF NOT EXISTS security.profile (
     FOREIGN KEY (user_id)
     REFERENCES security.users(id)
     ON UPDATE CASCADE 
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  CONSTRAINT fk_profile_image 
+    FOREIGN KEY (profile_image_id)
+    REFERENCES commons.images (id)
+    ON UPDATE CASCADE 
+    ON DELETE SET NULL, 
+  CONSTRAINT fk_background_image 
+    FOREIGN KEY (background_image_id)
+    REFERENCES commons.images (id)
+    ON UPDATE CASCADE 
+    ON DELETE SET NULL, 
 );
 
 CREATE INDEX idx_profile_user_id ON security.profile(user_id);
@@ -160,7 +172,7 @@ CREATE TABLE IF NOT EXISTS security.auth_info (
     FOREIGN KEY (auth_id) 
     REFERENCES security.auth (id)
     ON UPDATE CASCADE 
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
 );
 
 CREATE INDEX idx_auth_info_email ON security.auth_info(email);

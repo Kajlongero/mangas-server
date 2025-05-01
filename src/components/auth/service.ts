@@ -11,7 +11,11 @@ import { DBDependenciesInjector } from "../../lib/DBDependenciesInjector/definit
 import Queries from "../../db/querys.json";
 
 import { DBEngine } from "../../lib/DBDependenciesInjector/types/engine.dto";
-import { LoginCredentials, RegisterCredentials } from "./types/auth.dto";
+import {
+  JwtPayloads,
+  LoginCredentials,
+  RegisterCredentials,
+} from "./types/auth.dto";
 import { genKeys } from "../../security/rsa.gen";
 import { AuthInfo, Roles, Sessions } from "../../types/user.security.dto";
 import {
@@ -26,6 +30,7 @@ import {
   getExpirationTimeInMilis,
 } from "../../utils/time.functions";
 import { Roles as RoleNames } from "./enums/roles.enum";
+import { UserPasswordChange } from "./types/params.dto";
 
 export class AuthService extends CommonService {
   private database: DBDependenciesInjector;
@@ -52,7 +57,7 @@ export class AuthService extends CommonService {
     const keys = await genKeys("MEDIUM");
 
     const user = await this.database.queryOne<RegisterUser>(
-      this.queries.user.createUser,
+      this.database.queries.user.createUser,
       [username, email, hash, RoleNames.READER]
     );
     if (!user) throw badRequest("Failed to create user");
@@ -60,7 +65,7 @@ export class AuthService extends CommonService {
     const time = !remember ? getExpirationTime("LONG_180D") : null;
 
     const session = await this.database.queryOne<Sessions>(
-      this.queries.auth.sessions.createSession,
+      this.database.queries.auth.sessions.createSession,
       [user.authId, keys.publicKey, time]
     );
     if (!session) throw badRequest("Failed to create session");
@@ -79,10 +84,10 @@ export class AuthService extends CommonService {
       jti: rtJti,
       sub: user.authId,
       uid: user.userId,
-      exp: remember ? getExpirationTimeInMilis("LONG_180D") : 0,
+      exp: remember
+        ? getExpirationTimeInMilis("LONG_180D")
+        : getExpirationTimeInMilis("LONG_180D") * 200,
     };
-
-    if (remember) delete rtPayload.exp;
 
     const at = signAccessToken(atPayload);
     const rt = signRefreshToken(rtPayload);
@@ -129,13 +134,13 @@ export class AuthService extends CommonService {
     const time = remember ? getExpirationTime("LONG_180D") : null;
 
     const session = await this.database.queryOne<Sessions>(
-      this.queries.auth.sessions.createSession,
+      this.database.queries.auth.sessions.createSession,
       [info.authId, keys.publicKey, time]
     );
     if (!session) throw badRequest("Failed to create session");
 
     const roles = await this.database.query<Roles[]>(
-      this.queries.auth.roles.getRolesByAuthId,
+      this.database.queries.auth.roles.getRolesByAuthId,
       [info.authId]
     );
 
@@ -153,10 +158,10 @@ export class AuthService extends CommonService {
       jti: rtJti,
       uid: user.id,
       sub: info.authId.toString(),
-      exp: remember ? getExpirationTimeInMilis("LONG_180D") : 0,
+      exp: remember
+        ? getExpirationTimeInMilis("LONG_180D")
+        : getExpirationTimeInMilis("LONG_180D") * 200,
     };
-
-    if (remember) delete rtPayload.exp;
 
     const at = signAccessToken(atPayload);
     const rt = signRefreshToken(rtPayload);
@@ -173,21 +178,22 @@ export class AuthService extends CommonService {
     const user = await this.getUserById(payload.uid);
     if (!user) throw unauthorized("Invalid session token");
 
-    const session = await this.validateSession(payload, "Refresh");
+    const session = await this.database.queryOne<Sessions>(
+      this.database.queries.auth.sessions.getSessionByRtJti,
+      [payload.jti]
+    );
     if (!session) throw unauthorized("Invalid session token");
 
     const time = !session.expiresAt ? getExpirationTime("LONG_180D") : null;
 
-    console.log(user, session, time);
-
     const updateSession = await this.database.queryOne<Sessions>(
-      this.queries.auth.sessions.refreshSession,
+      this.database.queries.auth.sessions.refreshSession,
       [session.id, time]
     );
     if (!updateSession) throw unauthorized("Cannot refresh the session");
 
     const roles = await this.database.query<Roles[]>(
-      this.queries.auth.roles.getRolesByAuthId,
+      this.database.queries.auth.roles.getRolesByAuthId,
       [session.authId]
     );
     if (!roles.length) throw forbidden("You cannot perform any actions");
@@ -217,5 +223,85 @@ export class AuthService extends CommonService {
       refreshToken: rt,
       sessionId: session.id,
     };
+  }
+
+  async closeSession(payloads: JwtPayloads, sessionId: string) {
+    const existsSession = await this.database.queryOne<Sessions>(
+      this.database.queries.auth.sessions.getSessionById,
+      [sessionId]
+    );
+    if (!existsSession) throw unauthorized();
+
+    const { user, session } = await this.validateSessionWithUser(
+      payloads,
+      "Access"
+    );
+
+    const close = await this.database.queryOne(
+      this.database.queries.auth.sessions.deleteSession,
+      [sessionId]
+    );
+
+    return true;
+  }
+
+  async closeAllOwnOtherSessions(payloads: JwtPayloads) {
+    const { user, session } = await this.validateSessionWithUser(
+      payloads,
+      "Access"
+    );
+
+    const closed = await this.database.queryOne(
+      this.database.queries.auth.sessions.deleteOtherSessions,
+      [session.id, session.authId]
+    );
+
+    return true;
+  }
+
+  async passwordChange(payloads: JwtPayloads, passwords: UserPasswordChange) {
+    const { oldPassword, newPassword } = passwords;
+
+    const { user, session } = await this.validateSessionWithUser(
+      payloads,
+      "Access"
+    );
+
+    const info = await this.getInfoByAuthId(session.authId);
+    if (!info) throw forbidden();
+
+    const compare = await bcrypt.compare(oldPassword, info.password);
+    if (!compare) throw unauthorized("Invalid password");
+
+    const password = await bcrypt.hash(newPassword, 10);
+
+    const updated = await this.database.queryOne(
+      this.database.queries.auth.info.updatePassword,
+      [info.id, password]
+    );
+    if (!updated) throw badRequest();
+
+    if (passwords.closeSessions) {
+      await this.database.queryOne(
+        this.database.queries.auth.sessions.deleteOtherSessions,
+        [session.id, session.authId]
+      );
+    }
+
+    return "Password changed successfully";
+  }
+
+  async logout(payloads: JwtPayloads) {
+    const { user, session } = await this.validateSessionWithUser(
+      payloads,
+      "Access"
+    );
+
+    const logout = await this.database.queryOne(
+      this.database.queries.auth.sessions.deleteSession,
+      [session.id]
+    );
+
+    return true;
   }
 }

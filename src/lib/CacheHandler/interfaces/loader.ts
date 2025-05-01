@@ -1,5 +1,7 @@
+import { LoadersNames } from "../types/names";
+
 export interface Loader<T> {
-  name: string;
+  name: LoadersNames;
   keyRef: string | number;
   valueRef?: string;
 

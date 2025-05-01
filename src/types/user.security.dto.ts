@@ -3,7 +3,7 @@ export interface Sessions {
   atJti: string;
   rtJti: string;
   active: boolean;
-  authId: string;
+  authId: number;
   publicKey: string;
   lastActivity: string;
   createdAt: string;

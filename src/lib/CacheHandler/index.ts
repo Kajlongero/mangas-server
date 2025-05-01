@@ -1,5 +1,6 @@
 import { notAcceptable } from "@hapi/boom";
 import { Loader } from "./interfaces/loader";
+import { LoadersNames } from "./types/names";
 
 export class CacheHandler {
   private cache: Map<string | number, unknown>;
@@ -10,6 +11,10 @@ export class CacheHandler {
     this.cache = new Map();
   }
 
+  public getAllCache(): Map<string | number, unknown> {
+    return this.cache;
+  }
+
   public static getInstance(): CacheHandler {
     if (!CacheHandler.instance) {
       this.instance = new CacheHandler();
@@ -18,7 +23,7 @@ export class CacheHandler {
     return this.instance;
   }
 
-  public getCache<T>(cacheName: string): Map<string | number, T | null> {
+  public getCache<T>(cacheName: LoadersNames): Map<string | number, T | null> {
     if (!CacheHandler.instance) {
       CacheHandler.instance = new CacheHandler();
     }
@@ -33,21 +38,39 @@ export class CacheHandler {
     >;
   }
 
-  public getCacheElem(cacheName: string, key: string | number) {
+  public getCacheElem(cacheName: LoadersNames, key: string | number) {
     const cache = this.getCache(cacheName);
     if (!cache.has(key)) return null;
 
     return cache.get(key);
   }
 
-  public addToCache<T>(cacheName: string, key: string | number, value: T) {
+  public getCacheElemById<T>(cacheName: LoadersNames, key: number): T {
+    const elem = this.getCache(cacheName);
+
+    for (const [name, value] of elem.entries()) {
+      if (name === key) return value as T;
+    }
+
+    return null as T;
+  }
+
+  public addToCache<T>(
+    cacheName: LoadersNames,
+    key: string | number,
+    value: T
+  ) {
     const cache = this.getCache(cacheName);
     cache.set(key, value);
 
     return cache.get(key);
   }
 
-  public updateCache<T>(cacheName: string, key: string | number, value: T) {
+  public updateCache<T>(
+    cacheName: LoadersNames,
+    key: string | number,
+    value: T
+  ) {
     const cache = this.getCache(cacheName);
     if (!cache.has(key)) {
       this.addToCache(cacheName, key, value);
@@ -59,7 +82,7 @@ export class CacheHandler {
     return cache.get(key);
   }
 
-  public deleteFromCache(cacheName: string, key: string | number) {
+  public deleteFromCache(cacheName: LoadersNames, key: string | number) {
     const cache = this.getCache(cacheName);
     if (!cache.has(key)) return true;
 

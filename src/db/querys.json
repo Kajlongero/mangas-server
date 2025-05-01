@@ -7,7 +7,8 @@
       "info": {
         "getInfoByEmail": "SELECT * FROM security.auth_info WHERE email = $1",
         "getInfoByAuthId": "SELECT * FROM security.auth_info WHERE auth_id = $1",
-        "getInfoByUsername": "SELECT ai.* FROM security.auth_info AS ai INNER JOIN security.auth AS a ON ai.auth_id = a.id INNER JOIN security.users AS u ON u.id = a.user_id WHERE u.username = $1"
+        "getInfoByUsername": "SELECT ai.* FROM security.auth_info AS ai INNER JOIN security.auth AS a ON ai.auth_id = a.id INNER JOIN security.users AS u ON u.id = a.user_id WHERE u.username = $1",
+        "updatePassword": "UPDATE security.auth_info SET password = $2 WHERE id = $1 RETURNING *"
       },
       "roles": {
         "getRoles": "SELECT * FROM security.roles",
@@ -22,7 +23,8 @@
         "getSessionsByAuthId": "SELECT * FROM security.active_sessions WHERE auth_id = $1",
         "createSession": "SELECT * FROM security.create_session($1, $2, $3)",
         "refreshSession": "SELECT * FROM security.refresh_session($1, $2)",
-        "deleteSession": "DELETE FROM security.active_sessions WHERE id = $1"
+        "deleteSession": "DELETE FROM security.active_sessions WHERE id = $1 RETURNING *",
+        "deleteOtherSessions": "DELETE FROM security.active_sessions WHERE id != $1 AND auth_id = $2"
       },
       "recovery": {},
       "permissions": {},
@@ -40,13 +42,22 @@
       "getUserByUsername": "SELECT * FROM security.users WHERE username = $1",
       "getUserByAuthId": "SELECT * FROM security.users WHERE id = (SELECT user_id FROM security.auth WHERE id = $1)",
       "createUser": "SELECT * FROM security.register_user($1, $2, $3, $4)",
-      "updateUsername": "UPDATE security.users SET username = $2 WHERE id = $1",
+      "updateUsername": "UPDATE security.users SET username = $2 WHERE id = $1 RETURNING *",
       "deleteUser": "UPDATE security.users SET deleted_at = NOW() WHERE id = $1",
       "profile": {
         "getProfileById": "SELECT * FROM security.profile WHERE id = $1",
         "getProfileByUserId": "SELECT * FROM security.profile WHERE user_id = $1",
-        "updateDescription": "UPDATE security.profile SET description = $1 WHERE id = $2",
-        "updateBirthDate": "UPDATE security.profile SET birth_date = $1 WHERE id = $2"
+        "updateDescription": "UPDATE security.profile SET description = $2 WHERE user_id = $1 RETURNING *",
+        "updateBirthDate": "UPDATE security.profile SET birth_date = $2 WHERE user_id = $1 RETURNING *",
+        "setCoverImage": "UPDATE security.profile SET profile_image_id = $1 WHERE user_id = $2 RETURNING *",
+        "setBackgroundImage": "UPDATE security.profile SET background_image_id = $1 WHERE user_id = $2 RETURNING *"
+      }
+    },
+    "images": {
+      "createRecord": "INSERT INTO commons.images (url, images_store_id) VALUES ($1, $2) RETURNING *",
+      "stores": {
+        "getAll": "SELECT iis.*, p.name AS priority_name, p.priority AS priority, sn.name AS store_name, ss.name AS store_service_name FROM commons.images_store AS iis INNER JOIN commons.store_services AS ss ON iis.store_service_id = ss.id INNER JOIN commons.store_names AS sn ON sn.id = iis.store_name_id INNER JOIN commons.priorities AS p ON p.id = iis.priority_id",
+        "getById": "SELECT * FROM commons.images_store WHERE id = $1"
       }
     },
     "comics": {},
@@ -61,7 +72,8 @@
       "info": {
         "getInfoByEmail": "",
         "getInfoByAuthId": "",
-        "getInfoByUsername": ""
+        "getInfoByUsername": "",
+        "updatePassword": ""
       },
       "roles": {
         "getRoles": "",
@@ -76,7 +88,8 @@
         "getSessionsByAuthId": "",
         "createSession": "",
         "refreshSession": "",
-        "deleteSession": ""
+        "deleteSession": "",
+        "deleteOtherSessions": ""
       },
       "recovery": {},
       "permissions": {},
@@ -100,7 +113,16 @@
         "getProfileById": "",
         "getProfileByUserId": "",
         "updateDescription": "",
-        "updateBirthDate": ""
+        "updateBirthDate": "",
+        "setCoverImage": "",
+        "setBackgroundImage": ""
+      }
+    },
+    "images": {
+      "createRecord": "",
+      "stores": {
+        "getAll": "",
+        "getById": ""
       }
     },
     "comics": {},
@@ -115,7 +137,8 @@
       "info": {
         "getInfoByEmail": "",
         "getInfoByAuthId": "",
-        "getInfoByUsername": ""
+        "getInfoByUsername": "",
+        "updatePassword": ""
       },
       "roles": {
         "getRolesByAuthId": "",
@@ -130,7 +153,8 @@
         "getSessionsByAuthId": "",
         "createSession": "",
         "refreshSession": "",
-        "deleteSession": ""
+        "deleteSession": "",
+        "deleteOtherSessions": ""
       },
       "recovery": {},
       "permissions": {},
@@ -154,7 +178,16 @@
         "getProfileById": "",
         "getProfileByUserId": "",
         "updateDescription": "",
-        "updateBirthDate": ""
+        "updateBirthDate": "",
+        "setCoverImage": "",
+        "setBackgroundImage": ""
+      }
+    },
+    "images": {
+      "createRecord": "",
+      "stores": {
+        "getAll": "",
+        "getById": ""
       }
     },
     "comics": {},

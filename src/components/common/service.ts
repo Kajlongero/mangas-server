@@ -1,4 +1,4 @@
-import { unauthorized } from "@hapi/boom";
+import { forbidden, unauthorized } from "@hapi/boom";
 import { DBDependenciesInjector } from "../../lib/DBDependenciesInjector/definition";
 import {
   AccessTokenPayload,
@@ -8,6 +8,7 @@ import {
 import { User } from "../../types/user.dto";
 import { AuthInfo, Auth, Sessions } from "../../types/user.security.dto";
 import { SessionIdentifier } from "./types/session";
+import { JwtPayloads } from "../auth/types/auth.dto";
 
 export class CommonService {
   private _database: DBDependenciesInjector;
@@ -16,7 +17,7 @@ export class CommonService {
     this._database = database;
   }
 
-  async getUserById(id: string) {
+  protected async getUserById(id: string) {
     const user = await this._database.queryOne<User>(
       this._database.queries.user.getUserById,
       [id]
@@ -24,7 +25,7 @@ export class CommonService {
     return user;
   }
 
-  async getUserByAuthId(authId: number) {
+  protected async getUserByAuthId(authId: number) {
     const user = await this._database.queryOne<User>(
       this._database.queries.user.getUserByAuthId,
       [authId]
@@ -32,7 +33,7 @@ export class CommonService {
     return user;
   }
 
-  async getUserByUsername(username: string) {
+  protected async getUserByUsername(username: string) {
     const user = await this._database.queryOne<User>(
       this._database.queries.user.getUserByUsername,
       [username]
@@ -40,7 +41,7 @@ export class CommonService {
     return user;
   }
 
-  async getUserByEmail(email: string) {
+  protected async getUserByEmail(email: string) {
     const user = await this._database.queryOne<AuthInfo>(
       this._database.queries.auth.info.getInfoByEmail,
       [email]
@@ -48,7 +49,7 @@ export class CommonService {
     return user;
   }
 
-  async getAuthById(id: string) {
+  protected async getAuthById(id: string) {
     const auth = await this._database.queryOne<Auth>(
       this._database.queries.auth.getById,
       [id]
@@ -56,7 +57,7 @@ export class CommonService {
     return auth;
   }
 
-  async getAuthByUserId(userId: string) {
+  protected async getAuthByUserId(userId: string) {
     const auth = await this._database.queryOne<Auth>(
       this._database.queries.auth.getByUserId,
       [userId]
@@ -64,7 +65,7 @@ export class CommonService {
     return auth;
   }
 
-  async getInfoByUsername(username: string) {
+  protected async getInfoByUsername(username: string) {
     const info = await this._database.queryOne<AuthInfo>(
       this._database.queries.auth.info.getInfoByUsername,
       [username]
@@ -72,7 +73,15 @@ export class CommonService {
     return info;
   }
 
-  async validateSession(
+  protected async getInfoByAuthId(authId: number) {
+    const info = await this._database.queryOne<AuthInfo>(
+      this._database.queries.auth.info.getInfoByAuthId,
+      [authId]
+    );
+    return info;
+  }
+
+  private async validateSession(
     payload: AccessTokenPayload | RefreshTokenPayload,
     type: SessionIdentifier
   ) {
@@ -101,5 +110,48 @@ export class CommonService {
         throw unauthorized("Invalid token");
     }
     return session;
+  }
+
+  private validateTokenWithSessionEquality(
+    payloads: JwtPayloads,
+    session: Sessions
+  ) {
+    const { accessTokenPayload, refreshTokenPayload } = payloads;
+
+    if (accessTokenPayload.uid !== refreshTokenPayload.uid) throw forbidden();
+
+    if (accessTokenPayload.sub !== refreshTokenPayload.sub) throw forbidden();
+
+    if (session.atJti !== accessTokenPayload.jti) throw unauthorized();
+
+    if (session.authId.toString() !== accessTokenPayload.sub?.toString())
+      throw unauthorized();
+
+    if (session.rtJti !== refreshTokenPayload.jti) throw unauthorized();
+
+    if (session.authId.toString() !== refreshTokenPayload.sub?.toString())
+      throw unauthorized();
+
+    return true;
+  }
+
+  protected async validateSessionWithUser(
+    payloads: JwtPayloads,
+    type: "Access" | "Refresh"
+  ) {
+    const { accessTokenPayload, refreshTokenPayload } = payloads;
+
+    const session = await this.validateSession(accessTokenPayload, type);
+    if (!session) throw unauthorized();
+
+    const user = await this.getUserById(accessTokenPayload.uid);
+    if (!user) throw unauthorized();
+
+    this.validateTokenWithSessionEquality(payloads, session);
+
+    return {
+      session,
+      user,
+    };
   }
 }
